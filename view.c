@@ -1,53 +1,52 @@
-#include <stdio.h>
+#include "util_headers.h"
 
-// Shared Memory
-#include <sys/mman.h>
-#include <sys/stat.h>        /* For mode constants */
-#include <fcntl.h>           /* For O_* constants */
 
-#define ASCII_EOF 26
-
-#define READ_LENGTH 86
+#define MEMORY_CHUNCK 86
+#define SHM_MAX_LENGTH 50
 // File: {20 chars}.txt | MD5: {32 chars} | PID: {5 chars}\0
 
 // Devuelve el largo del string guardado
 // Data siempre tendra espacio
 int read_shm(char* data, char* buff, int* flag);
 
+int open_shm(char* shm_name, int flag);
+void * map_shm(int fd, size_t size, int flag);
+
 int main(int argc, char** argv){
-    printf("PROCESO VISTA\n");
-
     int flag = 0, space_counter = 1, char_counter = 0;
-    char data[READ_LENGTH];
-
+    char data[MEMORY_CHUNCK];
+    char * shm_name;
 
     if (argc < 2){
-        printf("Usage: %s shared_memory", argv[0]);
-        return -1;
+        shm_name = malloc(SHM_MAX_LENGTH);
+        read(STDIN_FILENO, shm_name, SHM_MAX_LENGTH);
+    } else{
+        shm_name = argv[1];
     }
 
-    char * shm_name = argv[1];
+    printf("Shared memory name: %s\n", shm_name);
 
-    int fd = shm_open(shm_name, O_RDONLY, 0);
-
-    if (fd == -1){
-        printf("Cannot open %s to read.\n", shm_name);
-        return -1;
-    }
+    // SHARED MEMORY TO READ DATA
+    int fd = open_shm(shm_name, O_RDONLY);
 
     // READ-LENGTH es el maximo tamaño que puede tener en primera instancia lo que debo imprimir
-    char* buffer = mmap(NULL, READ_LENGTH, PROT_READ, MAP_SHARED, fd, 0);
+    char* buffer = map_shm(fd, MEMORY_CHUNCK * sizeof(char), PROT_READ);
+    //----------------------------
 
-    if (buffer == MAP_FAILED){
-        printf("Cannot map shared memory.\n");
-        return -1;
-    }
+
+    // SEMAPHORE TO KNOW WHEN READ
+    int sem_fd = open_shm(SHM_SEM_NAME, O_RDWR);
+
+    sem_t* sem = map_shm(sem_fd, sizeof(sem_t), PROT_READ | PROT_WRITE);
+    //----------------------------
 
     while (flag == 0)
     {
+        sem_wait(sem);
+
         char_counter += read_shm(data, buffer, &flag);  // esto lo puedo interrumpir
 
-        buffer = mmap(NULL, char_counter + READ_LENGTH, PROT_READ, MAP_SHARED, fd, 0);    // mapeo devuelta con el posible espacio que voy a tener
+        buffer = mmap(NULL, char_counter + MEMORY_CHUNCK, PROT_READ, MAP_SHARED, fd, 0);    // mapeo devuelta con el posible espacio que voy a tener
 
         buffer += char_counter; // desfaso segun los caracteres leidos
 
@@ -58,8 +57,19 @@ int main(int argc, char** argv){
         }   
     }
 
-    munmap(buffer, (sizeof(char) * space_counter * READ_LENGTH) + 1);
+    if (argc < 2)       // quiere decir que hice un malloc
+    {
+        free(shm_name);
+    }
+    
+    
+    munmap(sem, sizeof(sem_t));             // Desmapeamos el espacio de memoria del programa
+    shm_unlink(SHM_SEM_NAME);               // desvinculamos el nombre de la shared memory
+    close(sem_fd);                          // cerramos el file descriptor
+
+    munmap(buffer, (sizeof(char) * space_counter * MEMORY_CHUNCK) + 1);
     shm_unlink(shm_name);
+    close(fd);
 
     return 0;
 }
@@ -67,7 +77,7 @@ int main(int argc, char** argv){
 int read_shm(char* data, char* buff, int* flag){
     int i;
 
-    for (i = 0; i < READ_LENGTH - 1 && buff[i] != 0 && buff[i] != ASCII_EOF ; i++)
+    for (i = 0; i < MEMORY_CHUNCK - 1 && buff[i] != 0 && buff[i] != ASCII_EOF ; i++)
     {
         data[i] = buff[i];
     }
@@ -84,4 +94,28 @@ int read_shm(char* data, char* buff, int* flag){
     i++;
 
     return i;
+}
+
+
+int open_shm(char* shm_name, int flag){
+
+    int fd = shm_open(shm_name, flag, 0);
+
+    if (fd == -1){
+        printf("Cannot open %s to read.\n", shm_name);
+        exit(-1);
+    }
+
+    return fd;
+}
+
+void * map_shm(int fd, size_t size, int flag){
+    void* buffer = mmap(NULL, size, flag, MAP_SHARED, fd, 0);
+
+    if (buffer == MAP_FAILED){
+        printf("Cannot map shared memory.\n");
+        exit(-1);
+    }
+
+    return buffer;
 }
