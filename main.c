@@ -6,6 +6,8 @@
 #define SLAVES_QTY 5
 #define TASKS_QTY 2
 
+#define ASCII_EOF 26
+
 // TODO: eliminar esta función
 void debug_print(char* message, char* color);
 void write_to_result_file(char* buffer);
