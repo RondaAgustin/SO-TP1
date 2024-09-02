@@ -15,5 +15,6 @@
 #include <fcntl.h>           /* For O_* constants */
 
 #define ASCII_EOF 26
+#define MEMORY_CHUNCK 86
 
 #endif

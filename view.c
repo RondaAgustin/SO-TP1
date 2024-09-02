@@ -1,7 +1,5 @@
 #include "util_headers.h"
 
-
-#define MEMORY_CHUNCK 86
 #define SHM_MAX_LENGTH 50
 // File: {20 chars}.txt | MD5: {32 chars} | PID: {5 chars}\0
 
