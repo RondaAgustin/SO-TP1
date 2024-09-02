@@ -38,6 +38,8 @@ int main(int argc, char *argv[]) {
             close(response_pipes[i][0]);            // Cierro el extremo de lectura del response pipe (no lo voy a usar).
             dup2(request_pipes[i][0], STDIN_FILENO); // Redirijo la entrada estándar al extremo de lectura del request pipe.
             dup2(response_pipes[i][1], STDOUT_FILENO); // Redirijo la salida estándar al extremo de escritura del response pipe.
+            close(request_pipes[i][0]);              // Cierro el extremo de lectura del request pipe (ya lo redirigí).
+            close(response_pipes[i][1]);             // Cierro el extremo de escritura del response pipe (ya lo redirigí).
             int res = execve("./slave", NULL, NULL);           // Ejecuto el programa esclavo.
             if(res == -1) {
                 char errorMsg[49];
@@ -75,7 +77,7 @@ int main(int argc, char *argv[]) {
 
     fd_set response_pipes_fds; // Estos son los file descriptors que vamos a monitorear para saber si hay información disponible para leer.
 
-    while(1) {
+    while(tasks_sent < argc) {
         FD_ZERO(&response_pipes_fds);                       // Los inicializamos todos en 0 en cada iteración del while, esto es necesario dado que select() modifica el set que le pasamos para indicar qué file descriptors tienen información disponible.
         int max_fd = -1;                                    // Usamos esta variable para guardar el file descriptor más grande que vamos a monitorear, dado que select() necesita que le pasemos esto (+1) por parámetro.
 
