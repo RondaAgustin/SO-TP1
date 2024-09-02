@@ -1,12 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include "utils.h"
 #include <string.h>
 
 #define SLAVES_QTY 5
 #define TASKS_QTY 2
 
-#define ASCII_EOF 26
+#define SHM_NAME "md5_shm"          // este define queda aca
+
 
 // TODO: eliminar esta función
 void debug_print(char* message, char* color);
@@ -18,6 +17,50 @@ int main(int argc, char *argv[]) {
     int request_pipes[SLAVES_QTY][2];
     int response_pipes[SLAVES_QTY][2];
     int tasks_sent = 0;
+
+    // Create shm to share semaphores
+    int sem_fd = open_shm(SHM_SEM_NAME, 
+                        O_CREAT | O_RDWR,
+                        0666
+                        );
+
+    create_shm_space(SHM_NAME, sem_fd, sizeof(sem_t));
+
+    sem_t *sem = map_shm(sem_fd, sizeof(sem_t), PROT_READ | PROT_WRITE);
+        
+    if (sem_init(sem, 1, 0) == -1)      // creamos un semaforo que se compartira y lo mapeamos a la shm
+    {
+        printf("Cannot create semaphore.\n");
+        return -1;
+    }
+
+    //-------------------------------------------------------------------------------------------------
+
+
+    // Create and print shared memory to connect view proces
+    char* buffer;
+
+    int total_size = MEMORY_CHUNK * (argc - 1) + 1;     // el + 1 hace referencia al ASCII_EOF
+    
+    int fd = open_shm(SHM_NAME, 
+                    O_CREAT | O_RDWR,   // creamos si no existe y se abre para lectura y escritura
+                    0666                // indica permisos de lectura y escritura para todos los usuarios
+    );
+
+    create_shm_space(SHM_NAME, fd, sizeof(char) * total_size);
+    
+    printf(SHM_NAME);           // Compartimos el nombre de la shared memory ya creada por salida estandar
+
+    buffer = map_shm(fd, sizeof(char) * total_size, PROT_READ | PROT_WRITE);  
+    //-------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
     char file_qty_buffer[30];
     sprintf(file_qty_buffer, "Se recibieron %d archivos.", argc - 1);
