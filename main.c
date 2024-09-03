@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 
 
     // Create and print shared memory to connect view proces
-    char* buffer;
+    char* shm_buffer;
 
     int total_size = MEMORY_CHUNK * (argc - 1) + 1;     // el + 1 hace referencia al ASCII_EOF
     
@@ -51,13 +51,9 @@ int main(int argc, char *argv[]) {
     
     printf(SHM_NAME);           // Compartimos el nombre de la shared memory ya creada por salida estandar
 
-    buffer = map_shm(fd, sizeof(char) * total_size, PROT_READ | PROT_WRITE);  
+    shm_buffer = map_shm(fd, sizeof(char) * total_size, PROT_READ | PROT_WRITE);  
+    
     //-------------------------------------------------------------------------------------------------
-
-
-
-
-
 
 
 
@@ -194,6 +190,11 @@ void write_to_result_file(char* buffer) {
     fprintf(result_file, "MD5: %s\n", buffer);
     fclose(result_file);
 }
+
+
+
+
+
 
 // TODO: eliminar esta función
 void debug_print(char* message, char* color) {
