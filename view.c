@@ -18,10 +18,10 @@ int main(int argc, char** argv){
     printf("Shared memory name: %s\n", shm_name);
 
     // SHARED MEMORY TO READ DATA
-    int fd = open_shm(shm_name, O_RDONLY, 0);
+    int fd = open_shm("md5_shm", O_RDONLY, 0);
 
     // READ-LENGTH es el maximo tamaño que puede tener en primera instancia lo que debo imprimir
-    char* buffer = map_shm(fd, MEMORY_CHUNK * sizeof(char), PROT_READ);
+    char* buffer = map_shm(fd, 4 * MEMORY_CHUNK * sizeof(char), PROT_READ);
     //----------------------------
 
 
@@ -31,22 +31,25 @@ int main(int argc, char** argv){
     sem_t* sem = map_shm(sem_fd, sizeof(sem_t), PROT_READ | PROT_WRITE);
     //----------------------------
 
+    
+
     while (flag == 0)
     {
         sem_wait(sem);
 
         char_counter += read_shm(data, buffer, &flag);  // esto lo puedo interrumpir
 
-        buffer = mmap(NULL, char_counter + MEMORY_CHUNK, PROT_READ, MAP_SHARED, fd, 0);    // mapeo devuelta con el posible espacio que voy a tener
-
-        buffer += char_counter; // desfaso segun los caracteres leidos
+        buffer = mmap(NULL, (char_counter + MEMORY_CHUNK) * sizeof(char), PROT_READ, MAP_SHARED, fd, 0);    // mapeo devuelta con el posible espacio que voy a tener
 
         if (flag == 0)
         {
             space_counter++;
             printf("%s\n", data);
         }   
+
+        buffer += char_counter; // desfaso segun los caracteres leidos
     }
+
 
     if (argc < 2)       // quiere decir que hice un malloc
     {
@@ -55,12 +58,12 @@ int main(int argc, char** argv){
     
     
     munmap(sem, sizeof(sem_t));             // Desmapeamos el espacio de memoria del programa
-    shm_unlink(SHM_SEM_NAME);               // desvinculamos el nombre de la shared memory
     close(sem_fd);                          // cerramos el file descriptor
+    shm_unlink(SHM_SEM_NAME);               // elimino la region de memoria compartida en el sistema
 
     munmap(buffer, (sizeof(char) * space_counter * MEMORY_CHUNK) + 1);
-    shm_unlink(shm_name);
     close(fd);
+    shm_unlink(shm_name);
 
     return 0;
 }

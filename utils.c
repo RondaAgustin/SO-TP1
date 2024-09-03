@@ -8,8 +8,6 @@ int read_shm(char* data, char* buff, int* flag){
         data[i] = buff[i];
     }
 
-    
-
     data[i] = '\0';
 
     if (buff[i] == ASCII_EOF)
@@ -40,7 +38,6 @@ void create_shm_space(char* shm_name, int fd, int size){
         printf("Cannot create space for shared memory.\n");
         exit(-1);
     }
-    return fd;
 }
 
 void * map_shm(int fd, size_t size, int flag){

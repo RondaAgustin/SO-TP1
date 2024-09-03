@@ -10,6 +10,7 @@
 // TODO: eliminar esta función
 void debug_print(char* message, char* color);
 void write_to_result_file(char* buffer);
+int share_to_view_process(char *buffer, const char *data);
 
 int main(int argc, char *argv[]) {
 
@@ -49,10 +50,13 @@ int main(int argc, char *argv[]) {
 
     create_shm_space(SHM_NAME, fd, sizeof(char) * total_size);
     
-    printf(SHM_NAME);           // Compartimos el nombre de la shared memory ya creada por salida estandar
-
     shm_buffer = map_shm(fd, sizeof(char) * total_size, PROT_READ | PROT_WRITE);  
-    
+
+    shm_buffer[total_size - 1] = ASCII_EOF;
+
+    printf("%s\n", SHM_NAME);           // Compartimos el nombre de la shared memory ya creada por salida estandar
+
+    sleep(2);
     //-------------------------------------------------------------------------------------------------
 
 
@@ -60,7 +64,7 @@ int main(int argc, char *argv[]) {
 
     char file_qty_buffer[30];
     sprintf(file_qty_buffer, "Se recibieron %d archivos.", argc - 1);
-    debug_print(file_qty_buffer, NULL);
+    // debug_print(file_qty_buffer, NULL);
 
     // Iniciamos los procesos esclavos
     for(int i = 0; i < SLAVES_QTY; i++) {
@@ -95,7 +99,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    debug_print("Esclavos creados", NULL);
+    // debug_print("Esclavos creados", NULL);
 
     // Ya con los esclavos creados, les enviamos una cantidad TASKS_QTY de tareas iniciales a cada uno.
     int continue_sending = 1;
@@ -111,7 +115,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    debug_print("Tareas enviadas", NULL);
+    // debug_print("Tareas enviadas", NULL);
 
     // Una vez que los esclavos tienen tareas, el proceso padre procede a escuchar cuando alguno de los pipes tiene información disponible.
     // para leer. Cuando lea un MD5, lo agrega al archivo resultado.txt y lo manda al proceso vista (en caso de existir).
@@ -153,15 +157,14 @@ int main(int argc, char *argv[]) {
                 char* md5 = strtok(NULL, ":");
 
                 // Le damos formato al output que vamos a generar
-                char buffer[86];
+                char buffer[MEMORY_CHUNK];
                 sprintf(buffer, "File: %s | MD5: %s | PID: %d", filename, md5, pids[i]);
 
                 // Agregamos el resultado al archivo resultado.txt.
                 write_to_result_file(buffer);
 
                 // Compartimos el resultado con el proceso vista.
-                // TODO: implementar share_to_view_process(buffer);
-                // share_to_view_process(buffer);
+                shm_buffer += share_to_view_process(shm_buffer, buffer);
 
                 // Verificamos si hay más tareas para enviar.
                 if(tasks_sent + 1 < argc) {
@@ -175,6 +178,16 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+
+    *shm_buffer = ASCII_EOF;        // ponemos en el EOF para que el programa vista sepa que ya esta
+
+
+    munmap(shm_buffer, (sizeof(char) * total_size) + 1);
+    close(fd);
+
+
+    munmap(sem, sizeof(sem_t));             // Desmapeamos el espacio de memoria del programa
+    close(sem_fd);                          // cerramos el file descriptor
 
     return 0;
 
@@ -191,10 +204,20 @@ void write_to_result_file(char* buffer) {
     fclose(result_file);
 }
 
+int share_to_view_process(char *buffer, const char *data){
+    int i;
 
+    for (i = 0; i < MEMORY_CHUNK - 1 && data[i] != '\0'; i++)
+    {
+        buffer[i] = data[i];
+    }
 
+    buffer[i] = '\0';
+    
+    i++;
 
-
+    return i;
+}
 
 // TODO: eliminar esta función
 void debug_print(char* message, char* color) {
