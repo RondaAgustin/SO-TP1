@@ -24,7 +24,7 @@ int main() {
 
         // Verificar si se ha recibido el terminador de cadena '\0'
         if (byte == '\0') {
-            sleep(3);
+            sleep(1);
             char output[60];
             sprintf(output, "%s:b23cfc5374362db7c6cbf6efba710f1b", buffer);
             write(STDOUT_FILENO, output, strlen(output));

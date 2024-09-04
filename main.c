@@ -7,8 +7,6 @@
 #define SHM_NAME "md5_shm\0"          // este define queda aca
 
 
-// TODO: eliminar esta función
-void debug_print(char* message, char* color);
 void write_to_result_file(char* buffer);
 int share_to_view_process(char *buffer, const char *data);
 
@@ -18,6 +16,8 @@ int main(int argc, char *argv[]) {
     int request_pipes[SLAVES_QTY][2];
     int response_pipes[SLAVES_QTY][2];
     int tasks_sent = 0;
+    int tasks_completed = 0;
+    int filesQty = argc - 1;
 
     // Create shm to share semaphores
     int sem_fd = open_shm(SHM_SEM_NAME, 
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     // Create and print shared memory to connect view proces
     char* shm_buffer;
 
-    int total_size = MEMORY_CHUNK * (argc - 1) + 1;     // el + 1 hace referencia al ASCII_EOF
+    int total_size = MEMORY_CHUNK * (filesQty) + 1;     // el + 1 hace referencia al ASCII_EOF
     
     int fd = open_shm(SHM_NAME, 
                     O_CREAT | O_RDWR,   // creamos si no existe y se abre para lectura y escritura
@@ -54,17 +54,10 @@ int main(int argc, char *argv[]) {
 
     shm_buffer[total_size - 1] = ASCII_EOF;
 
-    printf("%s", "md5_shm");           // Compartimos el nombre de la shared memory ya creada por salida estandar
+    printf("%s\n", SHM_NAME);             // Compartimos el nombre de la shared memory ya creada por salida estandar
     fflush(stdout);                     // Fuerzo a imprimir
     sleep(2);
     //-------------------------------------------------------------------------------------------------
-
-
-
-
-    char file_qty_buffer[30];
-    sprintf(file_qty_buffer, "Se recibieron %d archivos.", argc - 1);
-    // debug_print(file_qty_buffer, NULL);
 
     // Iniciamos los procesos esclavos
     for(int i = 0; i < SLAVES_QTY; i++) {
@@ -99,13 +92,12 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // debug_print("Esclavos creados", NULL);
 
     // Ya con los esclavos creados, les enviamos una cantidad TASKS_QTY de tareas iniciales a cada uno.
     int continue_sending = 1;
     for (int i = 0; i < SLAVES_QTY && continue_sending; i++) {
         for(int j = 0; j < TASKS_QTY; j++) {
-            if(tasks_sent + 1 >= argc) {
+            if(tasks_sent >= filesQty) {
                 continue_sending = 0;
                 break;
             }
@@ -115,14 +107,12 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // debug_print("Tareas enviadas", NULL);
-
     // Una vez que los esclavos tienen tareas, el proceso padre procede a escuchar cuando alguno de los pipes tiene información disponible.
     // para leer. Cuando lea un MD5, lo agrega al archivo resultado.txt y lo manda al proceso vista (en caso de existir).
 
     fd_set response_pipes_fds; // Estos son los file descriptors que vamos a monitorear para saber si hay información disponible para leer.
 
-    while(tasks_sent < argc) {
+    while(tasks_completed < filesQty) {
         FD_ZERO(&response_pipes_fds);                       // Los inicializamos todos en 0 en cada iteración del while, esto es necesario dado que select() modifica el set que le pasamos para indicar qué file descriptors tienen información disponible.
         int max_fd = -1;                                    // Usamos esta variable para guardar el file descriptor más grande que vamos a monitorear, dado que select() necesita que le pasemos esto (+1) por parámetro.
 
@@ -147,6 +137,7 @@ int main(int argc, char *argv[]) {
             // Preguntamos si en el pipe de índice i hay información disponible para leer.
             int read_fd = response_pipes[i][0];
             if (FD_ISSET(read_fd, &response_pipes_fds)) {
+                tasks_completed++;
 
                 // Hay un MD5 disponible en el pipe, lo leemos.
                 char md5_response_buffer[60];
@@ -168,7 +159,7 @@ int main(int argc, char *argv[]) {
                 shm_buffer += share_to_view_process(shm_buffer, buffer);
 
                 // Verificamos si hay más tareas para enviar.
-                if(tasks_sent + 1 < argc) {
+                if(tasks_sent < filesQty) {
                     char* task = argv[tasks_sent + 1];
                     write(request_pipes[i][1], task, strlen(task) + 1);
                     tasks_sent++;
@@ -195,7 +186,6 @@ int main(int argc, char *argv[]) {
 }
 
 void write_to_result_file(char* buffer) {
-    // debug_print(buffer, "magenta");
     FILE* result_file = fopen("resultado.txt", "a");
     if(result_file == NULL) {
         perror("Error al abrir el archivo resultado.txt");
@@ -218,39 +208,4 @@ int share_to_view_process(char *buffer, const char *data){
     i++;
 
     return i;
-}
-
-// TODO: eliminar esta función
-void debug_print(char* message, char* color) {
-
-    if (color == NULL)
-    {
-        color = "cyan";
-    }
-    
-
-    char* color_code;
-
-    // Definir el código de color basado en el nombre del color
-    if (strcmp(color, "red") == 0) {
-        color_code = "\033[1;31m";
-    } else if (strcmp(color, "green") == 0) {
-        color_code = "\033[1;32m";
-    } else if (strcmp(color, "yellow") == 0) {
-        color_code = "\033[1;33m";
-    } else if (strcmp(color, "blue") == 0) {
-        color_code = "\033[1;34m";
-    } else if (strcmp(color, "magenta") == 0) {
-        color_code = "\033[1;35m";
-    } else if (strcmp(color, "cyan") == 0) {
-        color_code = "\033[1;36m";
-    } else if (strcmp(color, "white") == 0) {
-        color_code = "\033[1;37m";
-    } else {
-        // Color por defecto (sin color)
-        color_code = "\033[0m";
-    }
-
-    // Imprimir el mensaje con el color especificado
-    printf("%s%s\033[0m\n", color_code, message);
 }
