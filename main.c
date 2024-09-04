@@ -4,7 +4,7 @@
 #define SLAVES_QTY 5
 #define TASKS_QTY 2
 
-#define SHM_NAME "md5_shm"          // este define queda aca
+#define SHM_NAME "md5_shm\0"          // este define queda aca
 
 
 // TODO: eliminar esta función
@@ -54,8 +54,8 @@ int main(int argc, char *argv[]) {
 
     shm_buffer[total_size - 1] = ASCII_EOF;
 
-    printf("%s\n", SHM_NAME);           // Compartimos el nombre de la shared memory ya creada por salida estandar
-
+    printf("%s", "md5_shm");           // Compartimos el nombre de la shared memory ya creada por salida estandar
+    fflush(stdout);                     // Fuerzo a imprimir
     sleep(2);
     //-------------------------------------------------------------------------------------------------
 
@@ -162,6 +162,7 @@ int main(int argc, char *argv[]) {
 
                 // Agregamos el resultado al archivo resultado.txt.
                 write_to_result_file(buffer);
+                sem_post(sem);
 
                 // Compartimos el resultado con el proceso vista.
                 shm_buffer += share_to_view_process(shm_buffer, buffer);
@@ -180,7 +181,7 @@ int main(int argc, char *argv[]) {
     }
 
     *shm_buffer = ASCII_EOF;        // ponemos en el EOF para que el programa vista sepa que ya esta
-
+    sem_post(sem);
 
     munmap(shm_buffer, (sizeof(char) * total_size) + 1);
     close(fd);
@@ -194,7 +195,7 @@ int main(int argc, char *argv[]) {
 }
 
 void write_to_result_file(char* buffer) {
-    debug_print(buffer, "magenta");
+    // debug_print(buffer, "magenta");
     FILE* result_file = fopen("resultado.txt", "a");
     if(result_file == NULL) {
         perror("Error al abrir el archivo resultado.txt");

@@ -15,13 +15,12 @@ int main(int argc, char** argv){
         shm_name = argv[1];
     }
 
-    printf("Shared memory name: %s\n", shm_name);
-
+    printf("Shm to read: %s\n\n", shm_name);
     // SHARED MEMORY TO READ DATA
-    int fd = open_shm("md5_shm", O_RDONLY, 0);
+    int fd = open_shm(shm_name, O_RDONLY, 0);
 
     // READ-LENGTH es el maximo tamaño que puede tener en primera instancia lo que debo imprimir
-    char* buffer = map_shm(fd, 4 * MEMORY_CHUNK * sizeof(char), PROT_READ);
+    char* buffer = map_shm(fd, space_counter * MEMORY_CHUNK * sizeof(char), PROT_READ);
     //----------------------------
 
 
@@ -48,6 +47,7 @@ int main(int argc, char** argv){
         }   
 
         buffer += char_counter; // desfaso segun los caracteres leidos
+        space_counter++;
     }
 
 
