@@ -1,4 +1,5 @@
 files/archivo*.txt
 *.txt
 
+.bash_history
 .vscode
