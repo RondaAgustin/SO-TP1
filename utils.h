@@ -24,4 +24,8 @@ int open_shm(char* shm_name, int flag, int mode);
 void create_shm_space(char* shm_name, int fd, int size);
 void * map_shm(int fd, size_t size, int flag);
 //---------
+
+// Random
+void read_until_end_of_string(int fd, char* buffer, int max_size);
+//---------
 #endif

@@ -80,6 +80,8 @@ int main(int argc, char *argv[]) {
         }
 
         if(pids[i] == 0) {                          // Estamos en el proceso hijo.
+            // TODO: cerrar pipes de procesos creados con anterioridad, desde 0 hasta i - 1. Chequear con lsof y CTRL-Z.
+
             // Configuramos los pipes.
             close(comunication_pipes->request[i][1]);             // Cierro el extremo de escritura del request pipe (no lo voy a usar).
             close(comunication_pipes->response[i][0]);            // Cierro el extremo de lectura del response pipe (no lo voy a usar).
@@ -150,8 +152,8 @@ int main(int argc, char *argv[]) {
                 completion_status->tasks_completed_by_slave[i]++;
 
                 // Hay un MD5 disponible en el pipe, lo leemos.
-                char md5_response_buffer[60];
-                read(read_fd, md5_response_buffer, sizeof(md5_response_buffer));
+                char md5_response_buffer[256];
+                read_until_end_of_string(read_fd, md5_response_buffer, 256);
                 
                 // El resultado que obtenemos será de la forma nombre_archivo:md5, entonces spliteamos el string.
                 char* filename = strtok(md5_response_buffer, ":");

@@ -50,3 +50,25 @@ void * map_shm(int fd, size_t size, int flag){
 
     return buffer;
 }
+
+void read_until_end_of_string(int fd, char* buffer, int max_size) {
+    char byte;
+    ssize_t bytes_read;
+    size_t total_bytes = 0;
+
+    while (1) {
+        bytes_read = read(fd, &byte, 1);
+
+        // Evitar desbordamiento del buffer
+        if (total_bytes >= max_size) {
+            fprintf(stderr, "Buffer overflow\n");
+            exit(1);
+        }
+
+        buffer[total_bytes++] = byte;
+
+        if (byte == '\0') {
+            return;
+        }
+    }
+}
