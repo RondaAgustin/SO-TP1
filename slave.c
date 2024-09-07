@@ -1,10 +1,7 @@
-// Esto es un programa provisorio que simula el comportamiento de un esclavo. Recibe tareas por stdin y las imprime por stdout.
-
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
-// TODO: implementar versión simplificada del slave, que directamente redireccione la salida de md5sum a stdout (ya viene con el nombre del archivo).
 int main() {
     char buffer[256];
     ssize_t bytes_read;
@@ -38,7 +35,6 @@ int main() {
                 close(pipe_fds[0]);
                 dup2(pipe_fds[1], STDOUT_FILENO);
                 close(pipe_fds[1]);
-                char md5_command[256];
                 char *args[] = {"/usr/bin/md5sum", buffer, NULL};
                 execve(args[0], args, NULL);
                 return -1;

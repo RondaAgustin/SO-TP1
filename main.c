@@ -80,7 +80,11 @@ int main(int argc, char *argv[]) {
         }
 
         if(pids[i] == 0) {                          // Estamos en el proceso hijo.
-            // TODO: cerrar pipes de procesos creados con anterioridad, desde 0 hasta i - 1. Chequear con lsof y CTRL-Z.
+            // TODO: Chequear que los pipes esten bien cerrados con lsof y CTRL-Z (probar que si se quedan abiertos comentando esto y que se cierran al descomentar)
+            for(int k = 0; k < i; k++) {
+                close(comunication_pipes->response[k][0]);
+                close(comunication_pipes->request[k][1]);
+            }
 
             // Configuramos los pipes.
             close(comunication_pipes->request[i][1]);             // Cierro el extremo de escritura del request pipe (no lo voy a usar).
@@ -176,13 +180,16 @@ int main(int argc, char *argv[]) {
                         char* task = argv[completion_status->tasks_sent + 1];
                         write(comunication_pipes->request[i][1], task, strlen(task) + 1);
                         completion_status->tasks_sent++;
-                    } else {
-                        // No hay más tareas para enviar, cerramos el pipe de escritura para que el esclavo termine.
-                        close(comunication_pipes->request[i][1]);
                     }
                 }
             }
         }
+    }
+
+    // Cerramos los pipes que quedaron abiertos.
+    for(int i = 0; i < SLAVES_QTY; i++) {
+        close(comunication_pipes->response[i][0]);
+        close(comunication_pipes->request[i][1]);
     }
 
     *shm_buffer = ASCII_EOF;        // ponemos en el EOF para que el programa vista sepa que ya esta
