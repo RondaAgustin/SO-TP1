@@ -34,7 +34,7 @@ int main(int argc, char** argv){
     while (flag == 0)
     {
         sem_wait(sem);
-
+        sleep(1);
         char_counter += read_shm(data, buffer, &flag);  // esto lo puedo interrumpir
 
         buffer = mmap(NULL, (char_counter + MEMORY_CHUNK) * sizeof(char), PROT_READ, MAP_SHARED, fd, 0);    // mapeo devuelta con el posible espacio que voy a tener
@@ -62,21 +62,12 @@ int main(int argc, char** argv){
     }
 
     close(sem_fd);                          // cerramos el file descriptor
-    
-    if (shm_unlink(SHM_SEM_NAME) == -1){
-        perror("Error al eliminar shared memory for sem.\n");
-    }
-
 
     if (munmap(buffer, (sizeof(char) *  char_counter + MEMORY_CHUNK)) == -1){
         perror("Error al desmapear buffer.\n");
     }
     
     close(fd);
-    
-    if (shm_unlink(shm_name) == -1){
-        perror("Error al eliminar shared memory.\n");
-    }
 
     return 0;
 }

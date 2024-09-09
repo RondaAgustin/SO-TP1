@@ -209,11 +209,18 @@ int main(int argc, char *argv[]) {
         perror("Error al desmapear shm_sem\n");
     }
     close(sem_fd);                          // cerramos el file descriptor
+    if (shm_unlink(SHM_SEM_NAME) == -1){
+        perror("Error al eliminar shared memory for sem.\n");
+    }
 
     if (munmap(shm_buffer_begin, sizeof(char) * total_size) == -1) {    // Desmapeamos el espacio de memoria del programa
         perror("Error al desmapear shm_buffer\n");
     }
     close(fd);
+    if (shm_unlink(SHM_NAME) == -1){
+        perror("Error al eliminar shared memory.\n");
+    }
+
 
     free(slave_argv);
 
