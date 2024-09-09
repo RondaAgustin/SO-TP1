@@ -29,6 +29,8 @@ int main(int argc, char *argv[]) {
     ComunicationPipes* comunication_pipes = malloc(sizeof(ComunicationPipes));
 
     // Create shm to share semaphores
+    sem_t * shm_sem;
+
     int sem_fd = open_shm(SHM_SEM_NAME, 
                         O_CREAT | O_RDWR,
                         0666
@@ -36,7 +38,7 @@ int main(int argc, char *argv[]) {
 
     create_shm_space(SHM_NAME, sem_fd, sizeof(sem_t));
 
-    sem_t *shm_sem = map_shm(sem_fd, sizeof(sem_t), PROT_READ | PROT_WRITE);
+    shm_sem = map_shm(sem_fd, sizeof(sem_t), PROT_READ | PROT_WRITE);
         
     if (sem_init(shm_sem, 1, 0) == -1)      // creamos un semaforo que se compartira y lo mapeamos a la shm
     {
@@ -48,7 +50,7 @@ int main(int argc, char *argv[]) {
 
 
     // Create and print shared memory to connect view proces
-    char* shm_buffer;
+    char* shm_buffer, *shm_buffer_begin;
 
     int total_size = MEMORY_CHUNK * (filesQty) + 1;     // el + 1 hace referencia al ASCII_EOF
     
@@ -59,13 +61,16 @@ int main(int argc, char *argv[]) {
 
     create_shm_space(SHM_NAME, fd, sizeof(char) * total_size);
     
-    shm_buffer = map_shm(fd, sizeof(char) * total_size, PROT_READ | PROT_WRITE);  
+    shm_buffer_begin = map_shm(fd, sizeof(char) * total_size, PROT_READ | PROT_WRITE);  
 
-    shm_buffer[total_size - 1] = ASCII_EOF;
+    shm_buffer_begin[total_size - 1] = ASCII_EOF;
+
+    shm_buffer = shm_buffer_begin;
 
     printf("%s",SHM_NAME);             // Compartimos el nombre de la shared memory ya creada por salida estandar
     fflush(stdout);                     // Fuerzo a imprimir
     sleep(2);
+    printf("\n");
     //-------------------------------------------------------------------------------------------------
 
     // Iniciamos los procesos esclavos
@@ -169,10 +174,10 @@ int main(int argc, char *argv[]) {
 
                 // Agregamos el resultado al archivo resultado.txt.
                 write_to_result_file(buffer);
-                sem_post(shm_sem);
 
                 // Compartimos el resultado con el proceso vista.
                 shm_buffer += share_to_view_process(shm_buffer, buffer);
+                sem_post(shm_sem);
 
                 // Verificamos si los esclavos completaron las tareas iniciales y luego si hay más tareas para enviar.
                 if(completion_status->tasks_completed_by_slave[i] >= TASKS_QTY) {
@@ -195,12 +200,17 @@ int main(int argc, char *argv[]) {
     *shm_buffer = ASCII_EOF;        // ponemos en el EOF para que el programa vista sepa que ya esta
     sem_post(shm_sem);
 
-    munmap(shm_buffer, (sizeof(char) * total_size) + 1);
-    close(fd);
 
 
-    munmap(shm_sem, sizeof(sem_t));             // Desmapeamos el espacio de memoria del programa
+    if (munmap(shm_sem, sizeof(sem_t)) == -1) {
+        perror("Error al desmapear shm_sem\n");
+    }
     close(sem_fd);                          // cerramos el file descriptor
+
+    if (munmap(shm_buffer_begin, sizeof(char) * total_size) == -1) {    // Desmapeamos el espacio de memoria del programa
+        perror("Error al desmapear shm_buffer\n");
+    }
+    close(fd);
 
     free(completion_status);
     free(comunication_pipes);

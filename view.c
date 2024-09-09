@@ -15,12 +15,12 @@ int main(int argc, char** argv){
         shm_name = argv[1];
     }
 
-    printf("Shm to read: %s\n\n", shm_name);
+    printf("Shm to read: %s\n", shm_name);
     // SHARED MEMORY TO READ DATA
     int fd = open_shm(shm_name, O_RDONLY, 0);
 
     // READ-LENGTH es el maximo tamaño que puede tener en primera instancia lo que debo imprimir
-    char* buffer = map_shm(fd, space_counter * MEMORY_CHUNK * sizeof(char), PROT_READ);
+    char* buffer = map_shm(fd,  MEMORY_CHUNK * sizeof(char), PROT_READ);
     //----------------------------
 
 
@@ -30,7 +30,6 @@ int main(int argc, char** argv){
     sem_t* sem = map_shm(sem_fd, sizeof(sem_t), PROT_READ | PROT_WRITE);
     //----------------------------
 
-    
 
     while (flag == 0)
     {
@@ -44,10 +43,10 @@ int main(int argc, char** argv){
         {
             space_counter++;
             printf("%s\n", data);
+            
+            buffer += char_counter; // desfaso segun los caracteres leidos
+            space_counter++;
         }   
-
-        buffer += char_counter; // desfaso segun los caracteres leidos
-        space_counter++;
     }
 
 
@@ -56,14 +55,28 @@ int main(int argc, char** argv){
         free(shm_name);
     }
     
+    sem_destroy(sem);
     
-    munmap(sem, sizeof(sem_t));             // Desmapeamos el espacio de memoria del programa
-    close(sem_fd);                          // cerramos el file descriptor
-    shm_unlink(SHM_SEM_NAME);               // elimino la region de memoria compartida en el sistema
+    if (munmap(sem, sizeof(sem_t)) == -1){  // Desmapeamos el espacio de memoria del programa
+        perror("Error al desmapear sem.\n");
+    }
 
-    munmap(buffer, (sizeof(char) * space_counter * MEMORY_CHUNK) + 1);
+    close(sem_fd);                          // cerramos el file descriptor
+    
+    if (shm_unlink(SHM_SEM_NAME) == -1){
+        perror("Error al eliminar shared memory for sem.\n");
+    }
+
+
+    if (munmap(buffer, (sizeof(char) *  char_counter + MEMORY_CHUNK)) == -1){
+        perror("Error al desmapear buffer.\n");
+    }
+    
     close(fd);
-    shm_unlink(shm_name);
+    
+    if (shm_unlink(shm_name) == -1){
+        perror("Error al eliminar shared memory.\n");
+    }
 
     return 0;
 }
