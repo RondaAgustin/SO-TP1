@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+// Forks
+#define SLAVE_FILE_NAME "./slave\0"
+
+
 //Semaphore
 #include <semaphore.h>
 

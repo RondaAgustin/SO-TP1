@@ -25,6 +25,9 @@ int main(int argc, char *argv[]) {
     pid_t pids[SLAVES_QTY];
     int filesQty = argc - 1;
 
+    char ** slave_argv = malloc(sizeof(char*));
+    slave_argv[0] = SLAVE_FILE_NAME;
+
     CompletionStatus* completion_status = malloc(sizeof(CompletionStatus));
     ComunicationPipes* comunication_pipes = malloc(sizeof(ComunicationPipes));
 
@@ -98,7 +101,7 @@ int main(int argc, char *argv[]) {
             dup2(comunication_pipes->response[i][1], STDOUT_FILENO); // Redirijo la salida estándar al extremo de escritura del response pipe.
             close(comunication_pipes->request[i][0]);              // Cierro el extremo de lectura del request pipe (ya lo redirigí).
             close(comunication_pipes->response[i][1]);             // Cierro el extremo de escritura del response pipe (ya lo redirigí).
-            int res = execve("./slave", NULL, NULL);           // Ejecuto el programa esclavo.
+            int res = execve(SLAVE_FILE_NAME, slave_argv, NULL);           // Ejecuto el programa esclavo.
             if(res == -1) {
                 char errorMsg[49];
                 sprintf(errorMsg, "Error al ejecutar el programa esclavo con PID %d\n", getpid());
@@ -211,6 +214,8 @@ int main(int argc, char *argv[]) {
         perror("Error al desmapear shm_buffer\n");
     }
     close(fd);
+
+    free(slave_argv);
 
     free(completion_status);
     free(comunication_pipes);
