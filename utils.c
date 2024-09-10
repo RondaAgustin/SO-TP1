@@ -59,6 +59,11 @@ void read_until_end_of_string(int fd, char* buffer, int max_size) {
     while (1) {
         bytes_read = read(fd, &byte, 1);
 
+        if(bytes_read == 0) {
+            buffer[total_bytes] = '\0';
+            return;
+        }
+
         // Evitar desbordamiento del buffer
         if (total_bytes >= max_size) {
             fprintf(stderr, "Buffer overflow\n");
