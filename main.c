@@ -25,8 +25,7 @@ int main(int argc, char *argv[]) {
     pid_t pids[SLAVES_QTY];
     int filesQty = argc - 1;
 
-    char ** slave_argv = malloc(sizeof(char*));
-    slave_argv[0] = SLAVE_FILE_NAME;
+    char * slave_argv[] = {SLAVE_FILE_NAME, NULL};
 
     CompletionStatus* completion_status = malloc(sizeof(CompletionStatus));
     ComunicationPipes* comunication_pipes = malloc(sizeof(ComunicationPipes));
@@ -37,7 +36,7 @@ int main(int argc, char *argv[]) {
     int sem_fd = open_shm(SHM_SEM_NAME, 
                         O_CREAT | O_RDWR,
                         0666
-                        );
+                    );
 
     create_shm_space(SHM_NAME, sem_fd, sizeof(sem_t));
 
@@ -53,7 +52,7 @@ int main(int argc, char *argv[]) {
 
 
     // Create and print shared memory to connect view proces
-    char* shm_buffer, *shm_buffer_begin;
+    char *shm_buffer, *shm_buffer_begin;
 
     int total_size = MEMORY_CHUNK * (filesQty) + 1;     // el + 1 hace referencia al ASCII_EOF
     
@@ -221,8 +220,6 @@ int main(int argc, char *argv[]) {
         perror("Error al eliminar shared memory.\n");
     }
 
-
-    free(slave_argv);
 
     free(completion_status);
     free(comunication_pipes);
