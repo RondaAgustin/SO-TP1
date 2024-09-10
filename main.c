@@ -27,8 +27,8 @@ int main(int argc, char *argv[]) {
 
     char * slave_argv[] = {SLAVE_FILE_NAME, NULL};
 
-    CompletionStatus* completion_status = malloc(sizeof(CompletionStatus));
-    ComunicationPipes* comunication_pipes = malloc(sizeof(ComunicationPipes));
+    CompletionStatus* completion_status = calloc(1, sizeof(CompletionStatus));
+    ComunicationPipes* comunication_pipes = calloc(1, sizeof(ComunicationPipes));
 
     // Create shm to share semaphores
     sem_t * shm_sem;
