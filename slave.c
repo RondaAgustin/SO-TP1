@@ -2,7 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 
-int main() {
+int main(int argc, char *argv[]) {
     char buffer[256];
     ssize_t bytes_read;
     size_t total_bytes = 0;
