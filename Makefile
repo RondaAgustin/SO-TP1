@@ -5,7 +5,7 @@ compile:
 	gcc -Wall main.c utils.c -o main && gcc view.c utils.c -o view && gcc slave.c -o slave
 
 clean:
-	rm main view slave
+	rm main view slave resultados.txt
 
 run:
 	./main files/*
