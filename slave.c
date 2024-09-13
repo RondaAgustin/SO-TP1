@@ -1,9 +1,13 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "utils.h"
+
 int main(int argc, char *argv[]) {
-    char buffer[256];
+    char buffer[MAX_STRING_LENGTH];
     ssize_t bytes_read;
     size_t total_bytes = 0;
 
@@ -40,10 +44,10 @@ int main(int argc, char *argv[]) {
                 return -1;
             } else {
                 close(pipe_fds[1]);
-                char md5[33]; // 32 caracteres + 1 para el terminador de cadena '\0'
-                read(pipe_fds[0], md5, 32);
-                md5[32] = '\0'; // Asegurarse de que la cadena esté terminada en nulo
-                char output[256];
+                char md5[MD5_LENGTH + 1]; // 32 caracteres + 1 para el terminador de cadena '\0'
+                read(pipe_fds[0], md5, MD5_LENGTH);
+                md5[MD5_LENGTH] = '\0'; // Asegurarse de que la cadena esté terminada en nulo
+                char output[MAX_STRING_LENGTH + MD5_LENGTH + 1];
                 sprintf(output, "%s:%s", buffer, md5);
                 write(STDOUT_FILENO, output, strlen(output) + 1);
                 total_bytes = 0; // Reiniciar el contador de bytes para la próxima lectura
