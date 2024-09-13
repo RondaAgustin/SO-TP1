@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "utils.h"
 
 #define SHM_MAX_LENGTH 50
@@ -6,10 +8,14 @@
 int main(int argc, char** argv){
     int flag = 0, space_counter = 1, char_counter = 0;
     char data[MEMORY_CHUNK];
-    char * shm_name;
+    char *shm_name;
 
     if (argc < 2){
-        shm_name = malloc(SHM_MAX_LENGTH);
+        if ((shm_name = malloc(SHM_MAX_LENGTH)) == NULL)
+        {
+            perror("Cannot alocate memory to read shm name\n");
+            exit(-1);
+        }
         read(STDIN_FILENO, shm_name, SHM_MAX_LENGTH);
     } else{
         shm_name = argv[1];
@@ -54,7 +60,6 @@ int main(int argc, char** argv){
         free(shm_name);
     }
     
-    sem_destroy(sem);
     
     if (munmap(sem, sizeof(sem_t)) == -1){  // Desmapeamos el espacio de memoria del programa
         perror("Error al desmapear sem.\n");
