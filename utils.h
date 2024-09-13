@@ -3,11 +3,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/select.h>
 #include <unistd.h>
+
+#define MAX_STRING_LENGTH 256
+#define MD5_LENGTH 32  
 
 // Forks
 #define SLAVE_FILE_NAME "./slave\0"
-
 
 //Semaphore
 #include <semaphore.h>
