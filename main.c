@@ -1,5 +1,8 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "utils.h"
 #include <string.h>
+#include <signal.h>
 
 #define SLAVES_QTY 5
 #define TASKS_QTY 2
@@ -21,6 +24,7 @@ typedef struct ComunicationPipes {
 } ComunicationPipes;
 
 int main(int argc, char *argv[]) {
+    signal(SIGPIPE, SIG_IGN);       // decidimos ignorar la señal SIGPIPE para que no haya leaks al correr el main | view
 
     pid_t pids[SLAVES_QTY];
     int filesQty = argc - 1;
@@ -28,7 +32,18 @@ int main(int argc, char *argv[]) {
     char * slave_argv[] = {SLAVE_FILE_NAME, NULL};
 
     CompletionStatus* completion_status = calloc(1, sizeof(CompletionStatus));
+    if (completion_status == NULL){
+        perror("Cannot allocate completion_status\n");
+        exit(-1);
+    }
+    
     ComunicationPipes* comunication_pipes = calloc(1, sizeof(ComunicationPipes));
+    if (comunication_pipes == NULL){
+        free(completion_status);
+        perror("Cannot allocate comunication_pipes\n");
+        exit(-1);
+    }
+    
 
     // Create shm to share semaphores
     sem_t * shm_sem;
@@ -163,30 +178,32 @@ int main(int argc, char *argv[]) {
                 completion_status->tasks_completed_by_slave[i]++;
 
                 // Hay un MD5 disponible en el pipe, lo leemos.
-                char md5_response_buffer[256];
-                read_until_end_of_string(read_fd, md5_response_buffer, 256);
+                char md5_response_buffer[MAX_STRING_LENGTH];
+                read_until_end_of_string(read_fd, md5_response_buffer, MAX_STRING_LENGTH);
                 
                 // El resultado que obtenemos será de la forma nombre_archivo:md5, entonces spliteamos el string.
                 char* filename = strtok(md5_response_buffer, ":");
                 char* md5 = strtok(NULL, ":");
 
-                // Le damos formato al output que vamos a generar
-                char buffer[MEMORY_CHUNK];
-                sprintf(buffer, "File: %s | MD5: %s | PID: %d", filename, md5, pids[i]);
+                if (filename != NULL && md5 != NULL){
+                    // Le damos formato al output que vamos a generar
+                    char buffer[MEMORY_CHUNK];
+                    sprintf(buffer, "File: %s | MD5: %s | PID: %d", filename, md5, pids[i]);
 
-                // Agregamos el resultado al archivo resultado.txt.
-                write_to_result_file(buffer);
+                    // Agregamos el resultado al archivo resultado.txt.
+                    write_to_result_file(buffer);
 
-                // Compartimos el resultado con el proceso vista.
-                shm_buffer += share_to_view_process(shm_buffer, buffer);
-                sem_post(shm_sem);
+                    // Compartimos el resultado con el proceso vista.
+                    shm_buffer += share_to_view_process(shm_buffer, buffer);
+                    sem_post(shm_sem);
 
-                // Verificamos si los esclavos completaron las tareas iniciales y luego si hay más tareas para enviar.
-                if(completion_status->tasks_completed_by_slave[i] >= TASKS_QTY) {
-                    if(completion_status->tasks_sent < filesQty) {
-                        char* task = argv[completion_status->tasks_sent + 1];
-                        write(comunication_pipes->request[i][1], task, strlen(task) + 1);
-                        completion_status->tasks_sent++;
+                    // Verificamos si los esclavos completaron las tareas iniciales y luego si hay más tareas para enviar.
+                    if(completion_status->tasks_completed_by_slave[i] >= TASKS_QTY) {
+                        if(completion_status->tasks_sent < filesQty) {
+                            char* task = argv[completion_status->tasks_sent + 1];
+                            write(comunication_pipes->request[i][1], task, strlen(task) + 1);
+                            completion_status->tasks_sent++;
+                        }
                     }
                 }
             }
