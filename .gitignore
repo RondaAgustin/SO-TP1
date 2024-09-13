@@ -4,6 +4,11 @@ files/archivo*.txt
 .bash_history
 .vscode
 
+.config
+PVS-Studio.log
+report.tasks
+strace_out
+
 main
 slave
 view
