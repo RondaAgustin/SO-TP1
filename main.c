@@ -9,8 +9,6 @@
 
 #define SHM_NAME "md5_shm\0"          // este define queda aca
 
-void write_to_result_file(char* buffer);
-int share_to_view_process(char *buffer, const char *data);
 
 typedef struct CompletionStatus {
     int tasks_sent;

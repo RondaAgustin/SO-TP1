@@ -83,7 +83,7 @@ void read_until_end_of_string(int fd, char* buffer, int max_size) {
 void write_to_result_file(char* buffer) {
     FILE* result_file = fopen(FILE_NAME, "a");
     if(result_file == NULL) {
-        perror("Error al abrir el archivo resultado.txt");
+        perror("Error al abrir el archivo de resultados");
         exit(1);
     }
     fprintf(result_file, "%s\n", buffer);
