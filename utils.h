@@ -25,6 +25,7 @@
 
 #define ASCII_EOF 4
 #define MEMORY_CHUNK 86
+#define CONECT_TIME 2
 
 int read_shm(char* data, char* buff, int* flag);        // Devuelve el largo del string guardado, data siempre tendra espacio
 int open_shm(char* shm_name, int flag, int mode);

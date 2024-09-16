@@ -84,7 +84,9 @@ int main(int argc, char *argv[]) {
 
     printf("%s",SHM_NAME);             // Compartimos el nombre de la shared memory ya creada por salida estandar
     fflush(stdout);                     // Fuerzo a imprimir
-    sleep(2);
+    
+    sleep(CONECT_TIME);
+    
     printf("\n");
     //-------------------------------------------------------------------------------------------------
 
