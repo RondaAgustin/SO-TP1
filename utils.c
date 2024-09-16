@@ -79,3 +79,28 @@ void read_until_end_of_string(int fd, char* buffer, int max_size) {
         }
     }
 }
+
+void write_to_result_file(char* buffer) {
+    FILE* result_file = fopen(FILE_NAME, "a");
+    if(result_file == NULL) {
+        perror("Error al abrir el archivo resultado.txt");
+        exit(1);
+    }
+    fprintf(result_file, "%s\n", buffer);
+    fclose(result_file);
+}
+
+int share_to_view_process(char *buffer, const char *data){
+    int i;
+
+    for (i = 0; i < MEMORY_CHUNK - 1 && data[i] != '\0'; i++)
+    {
+        buffer[i] = data[i];
+    }
+
+    buffer[i] = '\0';
+    
+    i++;
+
+    return i;
+}

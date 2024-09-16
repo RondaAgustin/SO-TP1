@@ -244,28 +244,3 @@ int main(int argc, char *argv[]) {
     return 0;
 
 }
-
-void write_to_result_file(char* buffer) {
-    FILE* result_file = fopen("resultado.txt", "a");
-    if(result_file == NULL) {
-        perror("Error al abrir el archivo resultado.txt");
-        exit(1);
-    }
-    fprintf(result_file, "MD5: %s\n", buffer);
-    fclose(result_file);
-}
-
-int share_to_view_process(char *buffer, const char *data){
-    int i;
-
-    for (i = 0; i < MEMORY_CHUNK - 1 && data[i] != '\0'; i++)
-    {
-        buffer[i] = data[i];
-    }
-
-    buffer[i] = '\0';
-    
-    i++;
-
-    return i;
-}
