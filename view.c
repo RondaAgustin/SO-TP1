@@ -1,6 +1,9 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "utils.h"
+#include <stdio.h>
+#include <string.h>
+
 
 #define SHM_MAX_LENGTH 50
 // File: {20 chars}.txt | MD5: {32 chars} | PID: {5 chars}\0
@@ -8,15 +11,18 @@
 int main(int argc, char** argv){
     int flag = 0, space_counter = 1, char_counter = 0;
     char data[MEMORY_CHUNK];
-    char *shm_name;
+    char *shm_name = NULL;
 
     if (argc < 2){
-        if ((shm_name = malloc(SHM_MAX_LENGTH)) == NULL)
-        {
-            perror("Cannot alocate memory to read shm name\n");
+        size_t len = 0;
+        if (getline(&shm_name, &len, stdin) == -1){
+            perror("Cannot read shm name\n");
             exit(-1);
         }
-        read(STDIN_FILENO, shm_name, SHM_MAX_LENGTH);
+        len = strlen(shm_name);
+        if (len > 0 && shm_name[len - 1] == '\n') {
+            shm_name[len - 1] = '\0'; // Reemplaza '\n' con '\0'
+        }
     } else{
         shm_name = argv[1];
     }
