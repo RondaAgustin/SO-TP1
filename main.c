@@ -3,6 +3,9 @@
 #include "utils.h"
 #include <string.h>
 #include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 
 #define SLAVES_QTY 5
 #define TASKS_QTY 2
@@ -82,10 +85,10 @@ int main(int argc, char *argv[]) {
 
     shm_buffer = shm_buffer_begin;
 
-    printf("%s",SHM_NAME);             // Compartimos el nombre de la shared memory ya creada por salida estandar
-    fflush(stdout);                     // Fuerzo a imprimir
-    
-    sleep(CONECT_TIME);
+    printf("%s\n",SHM_NAME);             // Compartimos el nombre de la shared memory ya creada por salida estandar
+    fflush(stdout);
+
+    sleep(CONNECT_TIME);
     
     printf("\n");
     //-------------------------------------------------------------------------------------------------
@@ -241,6 +244,9 @@ int main(int argc, char *argv[]) {
     free(completion_status);
     free(comunication_pipes);
 
-    return 0;
+    for (int i = 0; i < SLAVES_QTY; i++){
+        waitpid(pids[i], NULL, 0);
+    }
 
+    return 0;
 }

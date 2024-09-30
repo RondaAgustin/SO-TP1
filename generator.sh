@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script para crear 30 archivos con contenido aleatorio
-for i in {1..30}; do
+for i in {1..5}; do
     # Generar un tamaño aleatorio entre 1KB y 1MB
     size=$((RANDOM % 512 + 1))M
     

@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "utils.h"
 
 int main(int argc, char *argv[]) {
@@ -34,8 +35,8 @@ int main(int argc, char *argv[]) {
         if (byte == '\0') {
 
             pipe(pipe_fds);
-            
-            if(fork() == 0) {
+            int md5_pid;
+            if((md5_pid = fork()) == 0) {
                 close(pipe_fds[0]);
                 dup2(pipe_fds[1], STDOUT_FILENO);
                 close(pipe_fds[1]);
@@ -51,9 +52,10 @@ int main(int argc, char *argv[]) {
                 sprintf(output, "%s:%s", buffer, md5);
                 write(STDOUT_FILENO, output, strlen(output) + 1);
                 total_bytes = 0; // Reiniciar el contador de bytes para la próxima lectura
+                close(pipe_fds[0]);
+                waitpid(md5_pid, NULL, 0);
             }
         }
     }
-
     return 0;
 }
